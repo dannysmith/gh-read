@@ -35,7 +35,8 @@ These settle the spec's open questions and the gaps found when checking it again
 **GraphQL**
 
 - Refuse if any argument contains `mutation` or `subscription` as a GraphQL name: case-insensitive, with no `[A-Za-z0-9_]` on either side. Scanning every argument, not just `query=`, is simpler and closes gaps like `query[]=`. The name boundary keeps real read fields like `viewerSubscription` working.
-- The query can come from `-f`, `--raw-field` or `-F`, never `@file`. The endpoint is GraphQL only when it is exactly `graphql`, as in gh. `/graphql` is treated as a REST path and gets a harmless GET.
+- The query can come from `-f`, `--raw-field` or `-F`, never `@file`.
+- The endpoint is GraphQL only when it is exactly `graphql`, as in gh. Anything else, like `/graphql` or `graphql?x=1`, is a REST GET. Any endpoint that contains `graphql` (case-insensitive) still gets the word check, so it never matters whether GitHub runs a mutation sent over GET.
 
 **Parsing**
 
@@ -45,7 +46,8 @@ These settle the spec's open questions and the gaps found when checking it again
 - Value flags accept `--long value`, `--long=value` and `-x value`. Refuse attached short values (`-XPOST`, `-q.foo`), combined short flags (`-iX`), `--`, and unknown flags.
 - Headers: the name is the text before the first `:`, as in gh. It must equal `Accept` or `X-GitHub-Api-Version`, case-insensitive, with no surrounding whitespace.
 - `-F`/`--field`: refuse when the text after the first `=` starts with `@`. `-f key=@x` is a plain string and is allowed.
-- `-h`/`--help` anywhere prints our help and exits 0. No arguments prints usage and exits 2.
+- `-h`/`--help` anywhere prints our help and exits 0. No arguments is an ordinary refusal ("expected one endpoint").
+- Every refusal is exactly one stderr line starting `gh read: `, containing one of the reason phrases listed at the top of `test/cases.sh`. Flag problems are reported in argument order, before the endpoint, host and GraphQL checks. Refusals never echo a multi-line argument.
 
 **Known behaviour to document**
 
@@ -55,26 +57,26 @@ A write-shaped call without `-X`, eg `…/comments/1/replies -f body=hi`, is all
 
 An executable spec that needs no network, auth or Claude.
 
-- [ ] `test/fake-gh`: writes its argv NUL-separated (`printf '%s\0' "$@"`) to `$FAKE_GH_LOG` and exits with `${FAKE_GH_EXIT:-0}`. NUL separation keeps multi-line GraphQL arguments exact.
-- [ ] `test/cases.sh`: sourced by the runner. One case per line, in real shell quoting, grouped by rule:
+- [x] `test/fake-gh`: writes its argv NUL-separated (`printf '%s\0' "$@"`) to `$FAKE_GH_LOG` and exits with `${FAKE_GH_EXIT:-0}`. NUL separation keeps multi-line GraphQL arguments exact.
+- [x] `test/cases.sh`: sourced by the runner. One case per line, in real shell quoting, grouped by rule:
   - `allow <args>`: gh is called with exactly `api --method GET <args>`.
   - `allow_graphql <args>`: gh is called with exactly `api <args>`.
   - `deny <stderr-substring> <args>`: exit 2, gh is never called, and stderr contains the substring.
   - A way to set env for a case (for `GH_HOST`). Don't rely on `VAR=x func`, which behaves differently across shells.
-- [ ] Corpus cases based on `research/real-gh-api-commands.local.jsonl`, using generic owners, repos and bodies (`octo-org/octo-repo`), never copied verbatim. Cover:
+- [x] Corpus cases based on `research/real-gh-api-commands.local.jsonl`, using generic owners, repos and bodies (`octo-org/octo-repo`), never copied verbatim. Cover:
   - Reads: `--jq` with complex filters, raw `Accept` headers, `?ref=` query strings, `-X GET -f q=…` search, `--paginate`, flags after the endpoint, `{owner}/{repo}` placeholders.
   - GraphQL reads with fragments, aliases and `$endCursor` pagination.
   - Writes: `-X PATCH` with fields, `-F body=@file` replies, `-f body=` replies, batched `resolveReviewThread` mutations.
-- [ ] Edge cases for every rule above, including:
+- [x] Edge cases for every rule above, including:
   - Method: `--method=POST`, `-XPOST`, `-iX POST`, `--` followed by `-X`.
   - Fields and headers: `-F body=@/etc/passwd`, `-F x=@-`, `-H 'X-HTTP-Method-Override: DELETE'`, `-H 'Accept : x'`.
   - Hosts: `https://` endpoints, `--hostname`, `GH_HOST`.
   - GraphQL: a mutation in a second operation, a mutation in a comment, `viewerSubscription` (allowed), `-F query=@q.graphql`.
   - `--jq '$ENV.GH_TOKEN'` and `--jq 'env'`.
   - Arguments: zero endpoints, two endpoints, `--paginate=true`.
-- [ ] A test that gh's exit code passes through (`FAKE_GH_EXIT=3`).
-- [ ] `test/run.sh [shell …]`: runs every case with each given shell running `./gh-read`, prints failures in full, exits non-zero on any failure. Defaults to `/bin/sh`.
-- [ ] Run it against a stub `gh-read` and confirm the cases fail for the right reasons.
+- [x] A test that gh's exit code passes through (`FAKE_GH_EXIT=3`).
+- [x] `test/run.sh [shell …]`: runs every case with each given shell running `./gh-read`, prints failures in full, exits non-zero on any failure. Defaults to `/bin/sh`.
+- [x] Run it against a stub `gh-read` and confirm the cases fail for the right reasons.
 
 ## Phase 2: Spec and boilerplate
 

@@ -1,0 +1,6 @@
+#!/bin/sh
+# Stands in for gh during tests. gh-read execs "$GH_PATH", which test/run.sh points here.
+# Records the arguments it was given, NUL-separated so multi-line values stay exact,
+# then exits with $FAKE_GH_EXIT (default 0).
+printf '%s\0' "$@" >"$FAKE_GH_LOG"
+exit "${FAKE_GH_EXIT:-0}"
