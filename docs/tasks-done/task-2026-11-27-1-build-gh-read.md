@@ -106,8 +106,8 @@ An executable spec that needs no network, auth or Claude.
 
 ## Phase 5: Install and dotfiles
 
-- [ ] `gh extension install dannysmith/gh-read` from GitHub, not `gh extension install .`. A local install is a symlink into `~/dev/gh-read`, which sandboxed commands can write. The spec's threat model requires the installed extension to live outside any sandbox-writable path.
-- [ ] Smoke test a few real reads and refusals by hand.
-- [ ] Propose dotfiles edits for Danny to make or approve. Both files are write-protected from the sandbox.
+- [x] `gh extension install dannysmith/gh-read` from GitHub, not `gh extension install .`. A local install is a symlink into `~/dev/gh-read`, which sandboxed commands can write. The spec's threat model requires the installed extension to live outside any sandbox-writable path.
+- [x] Smoke test a few real reads and refusals by hand.
+- [x] Propose dotfiles edits for Danny to make or approve. Both files are write-protected from the sandbox.
   - `claude/settings.json`: add `Bash(gh read:*)` to `permissions.allow`, matching the file's existing `:*` style (the docs treat `:*` and ` *` as equivalent). Keep `Bash(gh api:*)` in `ask`.
   - `claude/CLAUDE.md` "GitHub" section: use `gh read` for API reads, falling back to `gh api` only for writes.
