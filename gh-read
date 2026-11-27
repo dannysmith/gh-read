@@ -3,7 +3,7 @@
 # you don't fully trust. Takes the same arguments as `gh api`, refuses anything
 # that could write, and hands the rest to `gh api` unchanged.
 #
-# The rules are described in SPEC.md, and test/cases.sh is their executable form.
+# The rules are described in docs/design.md, and test/cases.sh is their executable form.
 # Arguments are read the way gh's flag parser (pflag) reads them, so both agree
 # on what each one is. They're only checked, never rebuilt.
 

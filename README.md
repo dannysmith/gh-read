@@ -20,7 +20,7 @@ Permission rules match command prefixes, so they can't tell a GET from a POST. `
 gh extension install dannysmith/gh-read
 ```
 
-It's a single POSIX shell script, so it runs wherever gh does, including Alpine and other minimal Docker images.
+It's a single POSIX shell script, so it runs anywhere with gh and a POSIX shell, including Alpine and other minimal Docker images.
 
 ## Usage
 
@@ -51,7 +51,7 @@ These are refused:
 - `env` or `$ENV` in `--jq`, because gh's jq can read environment variables, which might include `GH_TOKEN`.
 - `--verbose`, `--allow-escape-sequences`, `--`, combined short flags like `-XPOST`, and any flag it doesn't recognise.
 
-The checks are strict on purpose. A wrong refusal costs you one `gh api` prompt. A wrong allow could post to GitHub. [SPEC.md](SPEC.md) has the full rules, and [test/cases.sh](test/cases.sh) has a test case for each.
+The checks are strict on purpose. A wrong refusal costs you one `gh api` prompt. A wrong allow could post to GitHub. [docs/design.md](docs/design.md) has the full rules and the reasoning behind them, and [test/cases.sh](test/cases.sh) has a test case for each.
 
 ## Using it with Claude Code
 
@@ -82,7 +82,7 @@ If you use Claude Code's Bash sandbox, gh can't read its credentials inside it, 
 }
 ```
 
-Use `"gh read *"` instead if you only want `gh read` to run outside. Either way, excluded commands still go through your permission rules, but any gh command you approve, including a `gh api` write, runs with your full access.
+Excluded commands still go through your permission rules, but any gh command you approve, including a `gh api` write, runs with your full access.
 
 Claude Code only takes a call out of the sandbox when your excluded commands cover every command in it. Even then, a `cd`, a redirect, a heredoc, `$(...)`, a subshell or a loop keeps it sandboxed (see [`sandbox.excludedCommands`](https://code.claude.com/docs/en/settings-reference#sandbox-excludedcommands)). So `gh read repos/cli/cli | jq .` runs inside the sandbox, because `jq` isn't excluded, and fails to authenticate. Agents need to filter output with `--jq` or `--template`, and run gh commands on their own.
 
@@ -93,8 +93,8 @@ Add something like this to your `CLAUDE.md` or `AGENTS.md`:
 ```markdown
 ## GitHub
 
-- Use `gh read` for GitHub API reads. It takes the same arguments as `gh api` but only makes GET requests and GraphQL queries. Use `gh api` only to write.
-- Run each gh command on its own, without pipes, redirects or `&&`. Filter output with `--jq` or `--template`.
+- Use `gh read` for GitHub API reads. It takes the same arguments as `gh api` but only makes GET requests and GraphQL queries. If it refuses a call, the error says why. Use `gh api` only to write.
+- Run each gh command on its own, with no pipes or redirects. Filter output with `--jq` or `--template`.
 - To read a file from a repo, use `-H 'Accept: application/vnd.github.raw'` or `--jq '.content | @base64d'` rather than piping to `base64`.
 - Use gh's own commands where one exists (`gh pr view`, `gh run view --log`, `gh search`).
 ```
@@ -121,7 +121,7 @@ The same approach works with any agent that allowlists commands: allow `gh read`
 
 ## What it protects against
 
-`gh read` stops an agent (confused, or steered by prompt injection) from writing to GitHub through a command you allowlisted for reading: comments, edits, merges, deletions, workflow runs, gists. It also keeps requests on github.com, which matters because it runs outside the sandbox, where the sandbox's network allowlist doesn't apply. And it stops `--jq` from printing your token.
+`gh read` stops an agent (confused, or steered by prompt injection) from writing to GitHub through a command you allowlisted for reading: comments, edits, merges, deletions, workflow runs, gists. It also keeps requests on github.com, which matters because it runs outside the sandbox, where the sandbox's network allowlist doesn't apply. And it stops `--jq` from reading environment variables, so a token kept there can't be printed.
 
 It doesn't:
 
