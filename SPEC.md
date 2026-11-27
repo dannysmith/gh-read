@@ -142,8 +142,8 @@ Claude Code (`~/.claude/settings.json`):
 ```json
 {
   "permissions": {
-    "allow": ["Bash(gh read:*)"],
-    "ask": ["Bash(gh api:*)"]
+    "allow": ["Bash(gh read *)"],
+    "ask": ["Bash(gh api *)"]
   }
 }
 ```

@@ -98,8 +98,8 @@ An executable spec that needs no network, auth or Claude.
 
 ## Phase 4: Tidy and publish
 
-- [ ] Check the README's Claude Code instructions against the current docs: permission rule syntax (`Bash(gh read:*)` vs `Bash(gh read *)`), how compound commands are matched, and the `excludedCommands` behaviour.
-- [ ] Read everything through once more for simplicity.
+- [x] Check the README's Claude Code instructions against the current docs: permission rule syntax (`Bash(gh read:*)` vs `Bash(gh read *)`), how compound commands are matched, and the `excludedCommands` behaviour.
+- [x] Read everything through once more for simplicity.
 - [x] `git init`. Confirm `research/*.local.*` is ignored before the first commit.
 - [ ] **Ask Danny** before creating `github.com/dannysmith/gh-read` and pushing. Make it public and add the `gh-extension` topic.
 - [ ] Confirm CI passes on GitHub.
@@ -109,5 +109,5 @@ An executable spec that needs no network, auth or Claude.
 - [ ] `gh extension install dannysmith/gh-read` from GitHub, not `gh extension install .`. A local install is a symlink into `~/dev/gh-read`, which sandboxed commands can write. The spec's threat model requires the installed extension to live outside any sandbox-writable path.
 - [ ] Smoke test a few real reads and refusals by hand.
 - [ ] Propose dotfiles edits for Danny to make or approve. Both files are write-protected from the sandbox.
-  - `claude/settings.json`: add `Bash(gh read:*)` (or whatever syntax Phase 4 confirms) to `permissions.allow`. Keep `Bash(gh api:*)` in `ask`.
+  - `claude/settings.json`: add `Bash(gh read:*)` to `permissions.allow`, matching the file's existing `:*` style (the docs treat `:*` and ` *` as equivalent). Keep `Bash(gh api:*)` in `ask`.
   - `claude/CLAUDE.md` "GitHub" section: use `gh read` for API reads, falling back to `gh api` only for writes.

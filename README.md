@@ -62,8 +62,8 @@ Allow `gh read` and keep `gh api` behind a prompt, in `~/.claude/settings.json`:
 ```json
 {
   "permissions": {
-    "allow": ["Bash(gh read:*)"],
-    "ask": ["Bash(gh api:*)"]
+    "allow": ["Bash(gh read *)"],
+    "ask": ["Bash(gh api *)"]
   }
 }
 ```
@@ -82,9 +82,9 @@ If you use Claude Code's Bash sandbox, gh can't read its credentials inside it, 
 }
 ```
 
-Use `"gh read *"` instead if you only want `gh read` to run outside.
+Use `"gh read *"` instead if you only want `gh read` to run outside. Either way, excluded commands still go through your permission rules, but any gh command you approve, including a `gh api` write, runs with your full access.
 
-Claude Code only runs a command outside the sandbox when every part of it is excluded, with no pipes, redirects, `&&`, `$(...)`, `cd` or loops. `gh read repos/cli/cli | jq .` runs inside the sandbox and fails to authenticate. So agents need to filter output with `--jq` or `--template`, and run one gh command per call.
+Claude Code only takes a call out of the sandbox when your excluded commands cover every command in it. Even then, a `cd`, a redirect, a heredoc, `$(...)`, a subshell or a loop keeps it sandboxed (see [`sandbox.excludedCommands`](https://code.claude.com/docs/en/settings-reference#sandbox-excludedcommands)). So `gh read repos/cli/cli | jq .` runs inside the sandbox, because `jq` isn't excluded, and fails to authenticate. Agents need to filter output with `--jq` or `--template`, and run gh commands on their own.
 
 ### Telling the agent
 
@@ -104,13 +104,13 @@ Add something like this to your `CLAUDE.md` or `AGENTS.md`:
 These are safe to allowlist too:
 
 ```json
-"Bash(gh pr view:*)", "Bash(gh pr list:*)", "Bash(gh pr diff:*)", "Bash(gh pr checks:*)", "Bash(gh pr status:*)",
-"Bash(gh issue view:*)", "Bash(gh issue list:*)", "Bash(gh issue status:*)",
-"Bash(gh run view:*)", "Bash(gh run list:*)", "Bash(gh run watch:*)",
-"Bash(gh workflow view:*)", "Bash(gh workflow list:*)",
-"Bash(gh release view:*)", "Bash(gh release list:*)",
-"Bash(gh repo view:*)", "Bash(gh label list:*)", "Bash(gh cache list:*)",
-"Bash(gh search:*)", "Bash(gh status)"
+"Bash(gh pr view *)", "Bash(gh pr list *)", "Bash(gh pr diff *)", "Bash(gh pr checks *)", "Bash(gh pr status *)",
+"Bash(gh issue view *)", "Bash(gh issue list *)", "Bash(gh issue status *)",
+"Bash(gh run view *)", "Bash(gh run list *)", "Bash(gh run watch *)",
+"Bash(gh workflow view *)", "Bash(gh workflow list *)",
+"Bash(gh release view *)", "Bash(gh release list *)",
+"Bash(gh repo view *)", "Bash(gh label list *)", "Bash(gh cache list *)",
+"Bash(gh search *)", "Bash(gh status *)"
 ```
 
 Think twice before adding `gh run download` or `gh release download`. With gh excluded from the sandbox, they can write files anywhere on disk.

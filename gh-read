@@ -84,6 +84,10 @@ refuse() {
   exit 2
 }
 
+refuse_unknown() {
+  refuse "unknown flag $(show "$1"). gh read accepts only some of gh api's flags: see gh read --help."
+}
+
 # Prints a value for a refusal message, which must stay on one line.
 show() {
   case $1 in
@@ -169,7 +173,7 @@ for arg do
         refuse "$(show "$arg") isn't allowed: $flag takes no value."
       else
         check_refused_flag "$flag"
-        refuse "unknown flag $(show "$arg"). gh read accepts only some of gh api's flags: see gh read --help."
+        refuse_unknown "$arg"
       fi
       ;;
     --* | -?)
@@ -177,7 +181,7 @@ for arg do
         pending=$arg
       elif ! in_list "$arg" "$bool_flags"; then
         check_refused_flag "$arg"
-        refuse "unknown flag $(show "$arg"). gh read accepts only some of gh api's flags: see gh read --help."
+        refuse_unknown "$arg"
       fi
       ;;
     -*)
@@ -185,7 +189,7 @@ for arg do
       if in_list "${arg%"${arg#??}"}" "$value_flags $bool_flags"; then
         refuse "$(show "$arg") isn't allowed: give short flags and their values as separate arguments, eg -X GET."
       fi
-      refuse "unknown flag $(show "$arg"). gh read accepts only some of gh api's flags: see gh read --help."
+      refuse_unknown "$arg"
       ;;
     *)
       endpoint=$arg
