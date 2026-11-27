@@ -101,8 +101,8 @@ An executable spec that needs no network, auth or Claude.
 - [x] Check the README's Claude Code instructions against the current docs: permission rule syntax (`Bash(gh read:*)` vs `Bash(gh read *)`), how compound commands are matched, and the `excludedCommands` behaviour.
 - [x] Read everything through once more for simplicity.
 - [x] `git init`. Confirm `research/*.local.*` is ignored before the first commit.
-- [ ] **Ask Danny** before creating `github.com/dannysmith/gh-read` and pushing. Make it public and add the `gh-extension` topic.
-- [ ] Confirm CI passes on GitHub.
+- [x] **Ask Danny** before creating `github.com/dannysmith/gh-read` and pushing. Make it public and add the `gh-extension` topic.
+- [x] Confirm CI passes on GitHub.
 
 ## Phase 5: Install and dotfiles
 
