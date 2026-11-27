@@ -80,13 +80,13 @@ An executable spec that needs no network, auth or Claude.
 
 ## Phase 2: Spec and boilerplate
 
-- [ ] Update `SPEC.md` with the decisions above. Remove the open questions, replace the `--dry-run` testing section, and add the exfiltration reasoning to the threat model.
-- [ ] `README.md`: what it is and why, install, usage, what's refused, and Claude Code setup (permissions, `sandbox.excludedCommands`, the bare-command caveat). Also:
+- [x] Update `SPEC.md` with the decisions above. Remove the open questions, replace the `--dry-run` testing section, and add the exfiltration reasoning to the threat model.
+- [x] `README.md`: what it is and why, install, usage, what's refused, and Claude Code setup (permissions, `sandbox.excludedCommands`, the bare-command caveat). Also:
   - An `AGENTS.md`/`CLAUDE.md` snippet: use `gh read` for API reads, one call per command, `--jq` instead of pipes, `--jq '.content | @base64d'` or `-H 'Accept: application/vnd.github.raw'` instead of piping to `base64`.
   - A recommended allowlist of gh's read-only subcommands.
   - A threat model summary.
-- [ ] `LICENSE` (MIT).
-- [ ] `.github/workflows/test.yml`:
+- [x] `LICENSE` (MIT).
+- [x] `.github/workflows/test.yml`:
   - Ubuntu: `dash`, `bash`, ShellCheck.
   - Alpine container: BusyBox `sh`, `grep` and `tr`, as found in many Docker images.
   - macOS: `/bin/sh`, which is bash 3.2 in POSIX mode.
@@ -100,7 +100,7 @@ An executable spec that needs no network, auth or Claude.
 
 - [ ] Check the README's Claude Code instructions against the current docs: permission rule syntax (`Bash(gh read:*)` vs `Bash(gh read *)`), how compound commands are matched, and the `excludedCommands` behaviour.
 - [ ] Read everything through once more for simplicity.
-- [ ] `git init`. Confirm `research/*.local.*` is ignored before the first commit.
+- [x] `git init`. Confirm `research/*.local.*` is ignored before the first commit.
 - [ ] **Ask Danny** before creating `github.com/dannysmith/gh-read` and pushing. Make it public and add the `gh-extension` topic.
 - [ ] Confirm CI passes on GitHub.
 

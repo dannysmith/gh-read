@@ -1,0 +1,35 @@
+# Runs test/cases.sh against gh-read under each shell it needs to work with.
+name: test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: gh-read is executable
+        run: test -x gh-read
+      - name: ShellCheck
+        run: shellcheck gh-read test/run.sh test/fake-gh test/cases.sh
+      - name: Cases under dash and bash
+        run: test/run.sh dash bash
+
+  # Alpine's sh, grep and tr are all BusyBox, as in many Docker images.
+  alpine:
+    runs-on: ubuntu-latest
+    container: alpine:latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Cases under BusyBox sh
+        run: test/run.sh /bin/sh
+
+  # macOS /bin/sh is bash 3.2 in POSIX mode.
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Cases under /bin/sh
+        run: test/run.sh /bin/sh
