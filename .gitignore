@@ -1,0 +1,3 @@
+*.local.*
+docs/tasks-todo/temporary/
+.DS_Store
