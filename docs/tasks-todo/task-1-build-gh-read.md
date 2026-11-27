@@ -93,8 +93,8 @@ An executable spec that needs no network, auth or Claude.
 
 ## Phase 3: Build
 
-- [ ] `gh-read`: a single POSIX `sh` executable at the repo root. Rule lists at the top (value flags, boolean flags, allowed headers, blocked GraphQL words). One `for arg do … done` pass that validates without touching `"$@"`, then `exec`.
-- [ ] Every case passes under `/bin/sh`, `dash`, `bash` and `ksh` locally, and ShellCheck is clean.
+- [x] `gh-read`: a single POSIX `sh` executable at the repo root. Rule lists at the top (value flags, boolean flags, allowed headers, blocked GraphQL words). One `for arg do … done` pass that validates without touching `"$@"`, then `exec`.
+- [x] Every case passes under `/bin/sh`, `dash`, `bash` and `ksh` locally, and ShellCheck is clean.
 
 ## Phase 4: Tidy and publish
 

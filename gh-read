@@ -1,0 +1,225 @@
+#!/bin/sh
+# gh read: read-only access to the GitHub API, for AI agents and anything else
+# you don't fully trust. Takes the same arguments as `gh api`, refuses anything
+# that could write, and hands the rest to `gh api` unchanged.
+#
+# The rules are described in SPEC.md, and test/cases.sh is their executable form.
+# Arguments are read the way gh's flag parser (pflag) reads them, so both agree
+# on what each one is. They're only checked, never rebuilt.
+
+set -f # Nothing here should glob.
+
+# --- Rules -------------------------------------------------------------------
+
+# gh api flags that take a value, as `-x value`, `--long value` or `--long=value`.
+value_flags='-X --method -q --jq -t --template --cache -p --preview -f --raw-field -F --field -H --header'
+
+# gh api flags that take no value. Accepted bare only.
+bool_flags='-i --include --paginate --slurp --silent'
+
+# Headers that may be sent, compared in lowercase.
+allowed_headers='accept x-github-api-version'
+
+# Words refused anywhere in the arguments of a GraphQL call.
+graphql_words='mutation subscription'
+
+# gh api flags that are refused, with the reason. Any other flag not listed
+# above is refused as unknown.
+check_refused_flag() {
+  case $1 in
+    --input) refuse "--input isn't allowed: it sends a request body. Use gh api for writes." ;;
+    --hostname) refuse "--hostname isn't allowed: gh read only talks to github.com." ;;
+    --verbose) refuse "--verbose isn't allowed: it prints request headers." ;;
+    --allow-escape-sequences) refuse "--allow-escape-sequences isn't allowed: it lets responses print terminal escape sequences." ;;
+  esac
+}
+
+# Checks the value given to a value flag.
+check_value() {
+  flag=$1
+  value=$2
+  case $flag in
+    -X | --method)
+      case $value in
+        [Gg][Ee][Tt]) ;;
+        *) refuse "$flag $(show "$value") isn't allowed: gh read only makes GET requests and GraphQL queries. Use gh api for writes." ;;
+      esac
+      ;;
+    -F | --field)
+      case $value in
+        @* | *=@*) refuse "$flag $(show "$value") isn't allowed: gh api reads a local file for a value starting with @ and sends it to GitHub. Use -f for literal text." ;;
+      esac
+      ;;
+    -H | --header)
+      if ! header_allowed "$value"; then
+        refuse "header $(show "${value%%:*}") isn't allowed: gh read sends only Accept and X-GitHub-Api-Version headers."
+      fi
+      ;;
+    -q | --jq)
+      if has_word env "$value"; then
+        refuse "$flag can't use env or \$ENV: through them, gh's jq reads environment variables, which can include GH_TOKEN."
+      fi
+      ;;
+  esac
+}
+
+# Succeeds for a `Name: value` header whose name is allowed, with no line breaks.
+header_allowed() {
+  case $1 in
+    *"$nl"* | *"$cr"*) return 1 ;;
+    *:*) in_list "$(lower "${1%%:*}")" "$allowed_headers" ;;
+    *) return 1 ;;
+  esac
+}
+
+# --- Helpers -----------------------------------------------------------------
+
+nl='
+'
+cr=$(printf '\r')
+
+# Prints a one-line refusal to stderr and exits 2. Nothing has been sent.
+refuse() {
+  printf 'gh read: %s\n' "$1" >&2
+  exit 2
+}
+
+# Prints a value for a refusal message, which must stay on one line.
+show() {
+  case $1 in
+    *"$nl"* | *"$cr"*) printf '(multi-line value)' ;;
+    '') printf "''" ;;
+    *) printf '%s' "$1" ;;
+  esac
+}
+
+# Succeeds if $1 is one of the space-separated words in $2.
+in_list() {
+  for item in $2; do
+    [ "$1" = "$item" ] && return 0
+  done
+  return 1
+}
+
+lower() {
+  printf '%s' "$1" | tr '[:upper:]' '[:lower:]'
+}
+
+# Succeeds if $2 contains the word $1 in any case, with no letter, digit or _
+# on either side. Covers GraphQL names and jq identifiers.
+has_word() {
+  printf '%s\n' "$2" | LC_ALL=C grep -Eqi "(^|[^A-Za-z0-9_])$1([^A-Za-z0-9_]|\$)"
+}
+
+usage() {
+  cat <<'EOF'
+Usage: gh read <endpoint> [flags]
+       gh read graphql -f query='query { ... }' [flags]
+
+Read-only gh api. Takes the same arguments, makes only GET requests and
+GraphQL queries, and refuses anything that could write.
+
+Flags:
+  -X, --method GET            The only method allowed
+  -q, --jq <expression>       Filter the response with jq (no env or $ENV)
+  -t, --template <template>   Format the response with a Go template
+      --paginate              Fetch every page of results
+      --slurp                 With --paginate, wrap all pages in one array
+  -i, --include               Print the response status line and headers
+      --silent                Don't print the response body
+      --cache <duration>      Cache the response, eg 1h
+  -p, --preview <names>       Opt into API previews
+  -f, --raw-field key=value   Add a string parameter
+  -F, --field key=value       Add a typed parameter (no @file values)
+  -H, --header key:value      Accept or X-GitHub-Api-Version only
+
+REST fields are sent as query-string parameters. A refused call sends
+nothing, exits 2 and says why on stderr. Use gh api for writes.
+
+https://github.com/dannysmith/gh-read
+EOF
+}
+
+# --- Main --------------------------------------------------------------------
+
+pending='' # a value flag still waiting for its value
+endpoint=''
+endpoints=0
+
+for arg do
+  if [ -n "$pending" ]; then
+    check_value "$pending" "$arg"
+    pending=''
+    continue
+  fi
+
+  case $arg in
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    --)
+      refuse "-- isn't allowed: it ends flag parsing, so the arguments after it couldn't be checked."
+      ;;
+    --*=*)
+      flag=${arg%%=*}
+      if in_list "$flag" "$value_flags"; then
+        check_value "$flag" "${arg#*=}"
+      elif in_list "$flag" "$bool_flags"; then
+        refuse "$(show "$arg") isn't allowed: $flag takes no value."
+      else
+        check_refused_flag "$flag"
+        refuse "unknown flag $(show "$arg"). gh read accepts only some of gh api's flags: see gh read --help."
+      fi
+      ;;
+    --* | -?)
+      if in_list "$arg" "$value_flags"; then
+        pending=$arg
+      elif ! in_list "$arg" "$bool_flags"; then
+        check_refused_flag "$arg"
+        refuse "unknown flag $(show "$arg"). gh read accepts only some of gh api's flags: see gh read --help."
+      fi
+      ;;
+    -*)
+      # A short flag with something attached: -XPOST, -X=GET, -iX, -q.foo.
+      if in_list "${arg%"${arg#??}"}" "$value_flags $bool_flags"; then
+        refuse "$(show "$arg") isn't allowed: give short flags and their values as separate arguments, eg -X GET."
+      fi
+      refuse "unknown flag $(show "$arg"). gh read accepts only some of gh api's flags: see gh read --help."
+      ;;
+    *)
+      endpoint=$arg
+      endpoints=$((endpoints + 1))
+      ;;
+  esac
+done
+
+[ -z "$pending" ] || refuse "$pending needs a value."
+
+[ "$endpoints" -eq 1 ] || refuse "expected one endpoint, got $endpoints. Usage: gh read <endpoint> [flags]"
+
+case $endpoint in
+  *://*) refuse "full URLs aren't allowed: gh read only talks to github.com. Give a path such as repos/OWNER/REPO." ;;
+esac
+
+if [ -n "${GH_HOST:-}" ] && [ "$GH_HOST" != github.com ]; then
+  refuse "GH_HOST=$(show "$GH_HOST") isn't allowed: gh read only talks to github.com."
+fi
+
+# Any endpoint mentioning graphql gets this check, not just `graphql` itself,
+# so a GET to the GraphQL endpoint can never carry a mutation either.
+case $(lower "$endpoint") in
+  *graphql*)
+    for word in $graphql_words; do
+      if has_word "$word" "$*"; then
+        refuse "GraphQL ${word}s aren't allowed: gh read only runs queries. Use gh api for writes."
+      fi
+    done
+    ;;
+esac
+
+# gh sets GH_PATH to its own executable when it runs an extension.
+if [ "$endpoint" = graphql ]; then
+  exec "${GH_PATH:-gh}" api "$@"
+fi
+exec "${GH_PATH:-gh}" api --method GET "$@"

@@ -180,6 +180,9 @@ deny 'only Accept and X-GitHub-Api-Version headers' repos/octo-org/octo-repo -H 
 deny 'only Accept and X-GitHub-Api-Version headers' repos/octo-org/octo-repo -H 'Accept'
 deny 'only Accept and X-GitHub-Api-Version headers' repos/octo-org/octo-repo -H 'AcceptX: y'
 deny 'only Accept and X-GitHub-Api-Version headers' repos/octo-org/octo-repo -H -X
+deny 'only Accept and X-GitHub-Api-Version headers' repos/octo-org/octo-repo -H "$(printf 'Accept: x\r\nX-HTTP-Method-Override: DELETE')"
+deny 'only Accept and X-GitHub-Api-Version headers' repos/octo-org/octo-repo -H 'Accept: x
+X-HTTP-Method-Override: DELETE'
 
 # --- Hosts -------------------------------------------------------------------
 
